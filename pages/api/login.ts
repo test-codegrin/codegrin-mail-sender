@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import bcrypt from 'bcrypt';
+import { comparePassword } from '@/lib/crypto';
 import { getStore } from '@/lib/store';
 import { generateToken } from '@/lib/auth';
 
@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const isValid = await bcrypt.compare(password, store.user.passwordHash);
+    const isValid = await comparePassword(password, store.user.passwordHash);
 
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid credentials' });

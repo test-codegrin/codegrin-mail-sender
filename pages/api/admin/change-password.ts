@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import bcrypt from 'bcrypt';
+import { comparePassword, hashPassword } from '@/lib/crypto';
 import { getStore, saveStore } from '@/lib/store';
 import { withAuth } from '@/lib/auth';
 
@@ -21,13 +21,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const store = await getStore();
 
-    const isValid = await bcrypt.compare(currentPassword, store.user.passwordHash);
+    const isValid = await comparePassword(currentPassword, store.user.passwordHash);
 
     if (!isValid) {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
-    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    const newPasswordHash = await hashPassword(newPassword);
     store.user.passwordHash = newPasswordHash;
 
     await saveStore(store);

@@ -1,9 +1,4 @@
-import fs from 'fs';
-import path from 'path';
-import bcrypt from 'bcrypt';
-
-const DATA_DIR = path.join(process.cwd(), 'data');
-const STORE_FILE = path.join(DATA_DIR, 'store.json');
+import { hashPassword } from './crypto';
 
 export interface User {
   email: string;
@@ -33,19 +28,13 @@ export interface Store {
   templates: Template[];
 }
 
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
+let globalStore: Store | null = null;
 
 async function initializeStore(): Promise<Store> {
-  ensureDataDir();
-
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'changeme123';
 
-  const passwordHash = await bcrypt.hash(adminPassword, 10);
+  const passwordHash = await hashPassword(adminPassword);
 
   const initialStore: Store = {
     user: {
@@ -56,22 +45,17 @@ async function initializeStore(): Promise<Store> {
     templates: [],
   };
 
-  fs.writeFileSync(STORE_FILE, JSON.stringify(initialStore, null, 2));
+  globalStore = initialStore;
   return initialStore;
 }
 
 export async function getStore(): Promise<Store> {
-  ensureDataDir();
-
-  if (!fs.existsSync(STORE_FILE)) {
+  if (!globalStore) {
     return await initializeStore();
   }
-
-  const data = fs.readFileSync(STORE_FILE, 'utf-8');
-  return JSON.parse(data);
+  return globalStore;
 }
 
 export async function saveStore(store: Store): Promise<void> {
-  ensureDataDir();
-  fs.writeFileSync(STORE_FILE, JSON.stringify(store, null, 2));
+  globalStore = store;
 }
